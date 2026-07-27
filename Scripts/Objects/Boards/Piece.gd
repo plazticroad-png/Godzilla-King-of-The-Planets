@@ -1,41 +1,45 @@
+## A board piece is the object that represents a game character on a planet board
 @tool
-class_name BoardPiece
-extends Sprite2D
+class_name BoardPiece extends Sprite2D
 
-const PIECE_STEPS := [
-	2, # Godzilla
-	4, # Mothra
-]
-const FRAME_COUNT := 3  # White piece and 2 colored walking sprites
-const FRAME_SPEED := [
-	0.13, # Godzilla
-	0.2, # Mothra
-]
+const PIECE_INFO: Dictionary[PlayerCharacter.Type, Dictionary] = {
+	PlayerCharacter.Type.GODZILLA: {
+		steps = 2,
+		frame_speed = 0.13,
+	},
+	PlayerCharacter.Type.MOTHRA: {
+		steps = 4,
+		frame_speed = 0.2,
+	},
+}
 
-@export var piece_character := PlayerCharacter.Type.GODZILLA:
-	set(value):
-		piece_character = value
-		update_frame()
-		queue_redraw()
-@export_enum("Player", "Boss") var piece_type := 0:
-	set(value):
-		piece_type = value
-		update_frame()
-		queue_redraw()
-@export var boss_scene: PackedScene = null
+const FRAME_COUNT := 3 # White piece and 2 colored walking sprites
+
+## TODO: comment
+@export var piece_character := PlayerCharacter.Type.GODZILLA
+@export var piece_info: BoardPieceInfo
+@export_enum("Player", "Boss") var piece_type := 0
+
+## XP level of the piece.
 ## Only works if it's a boss, otherwise loaded from the current save.
 ## If there's no current save, then it's 1.
 @export var level := 1
+
+@export_tool_button("Update Sprites") var _update_sprites := func() -> void:
+	update_frame()
+	queue_redraw()
 
 # "Board Pieces" node
 @onready var parent := get_parent()
 
 var tilemap: TileMapLayer
 var selector: BoardSelector
+var board: Board
 
 var init_pos: Vector2
 var piece_frame := 0
 var tile_below := Vector2i(-1, -1)
+var scene_tile_below: LevelSceneTile
 var selected := false
 var steps := 0
 var walk_frame := 0.0
@@ -46,6 +50,7 @@ class CharacterData:
 	var bars := 0
 	var xp := 0
 	var level := 1
+	var custom_data: Dictionary = {}
 
 var character_data := CharacterData.new()
 
@@ -60,6 +65,7 @@ func _ready() -> void:
 	if selector == null:
 		return
 	tilemap = selector.tilemap
+	board = Global.board
 	process_priority = 1
 	
 	# Adjust position
@@ -69,17 +75,22 @@ func _ready() -> void:
 	await get_tree().process_frame
 	hide_cell_below()
 	
-	if piece_character == PlayerCharacter.Type.MOTHRA:
-		walk_anim = 1
-	
 	var players_data: Dictionary = Global.board.board_data["players"]
 	if players_data.has(name):
 		character_data.level = players_data[name]["level"]
 		character_data.xp = players_data[name]["xp"]
 		level = character_data.level
-		
-	steps = PIECE_STEPS[piece_character]
-	character_data.bars = PlayerCharacter.calculate_bar_count(piece_character, level)
+	
+	if piece_info == null:
+		steps = PIECE_INFO[piece_character].steps
+		character_data.bars = PlayerCharacter.calculate_bar_count(piece_character, level)
+		if piece_character == PlayerCharacter.Type.MOTHRA:
+			walk_anim = 1
+	else:
+		steps = piece_info.steps_count
+		character_data.bars = piece_info.bar_count
+		if piece_info.flying_animation:
+			walk_anim = 1
 	character_data.hp = character_data.bars * 8
 
 func _process(delta: float) -> void:
@@ -89,16 +100,24 @@ func _process(delta: float) -> void:
 		if walk_anim == 0 and not selector.is_stopped() \
 			or walk_anim == 1:
 				# Switch frame every 0.2 of a second
-				walk_frame += delta / FRAME_SPEED[piece_character]
+				walk_frame += delta / PIECE_INFO[piece_character].frame_speed
 				if walk_frame >= 2:
 					walk_frame -= 2
 				piece_frame = floori(1 + walk_frame)
 				update_frame()
 
 func update_frame() -> void:
+	if piece_info != null:
+		texture = piece_info.sprites
+	else:
+		texture = preload("uid://wmgv6kcqcri0")
+	
 	# + 1 to skip the top row of the spritesheet (non-character sprites for boards)
 	var xoffset := 48 * piece_frame
 	var yoffset := 48 * (piece_character + 1)
+	
+	if piece_info != null:
+		yoffset = 0
 	
 	region_rect.position.x = xoffset
 	region_rect.position.y = yoffset
@@ -106,6 +125,7 @@ func update_frame() -> void:
 	# Face the left direction if it's a boss
 	scale.x = 1 if piece_type == 0 else -1
 
+## Get current tilemap cell coords of the piece
 func get_cell_pos() -> Vector2i:
 	if Engine.is_editor_hint():
 		return Vector2i.ZERO
@@ -114,6 +134,13 @@ func get_cell_pos() -> Vector2i:
 func hide_cell_below() -> void:
 	if Engine.is_editor_hint():
 		return
+		
+	# Check if there's a scene tile below
+	scene_tile_below = board.get_current_scene_tile(get_cell_pos())
+	if scene_tile_below != null:
+		scene_tile_below.hide()
+		return
+		
 	var tile: Vector2i = selector.cell_from_pos(get_cell_pos())
 	if tile.x < 0: # Return if already hidden
 		return
@@ -121,10 +148,14 @@ func hide_cell_below() -> void:
 	tilemap.erase_cell(get_cell_pos())
 	
 func show_cell_below() -> void:
+	if scene_tile_below != null:
+		scene_tile_below.show()
+		return
+	
 	tilemap.set_cell(get_cell_pos(), 1, tile_below)
 	tile_below = Vector2i(-1, -1)
 
-# The player/boss has selected this board piece
+## The player/boss has selected this board piece
 func select() -> void:
 	selected = true
 	
@@ -140,8 +171,9 @@ func select() -> void:
 		# Move this piece above every other piece
 		parent.move_child(self, -1)
 	
-		Global.board.menubip.play()
+		Global.play_global_sfx("MenuBip")
 	
+## The player/boss has deselected this board piece
 func deselect() -> void:
 	selected = false
 	
@@ -155,6 +187,7 @@ func deselect() -> void:
 		position = init_pos
 		hide_cell_below()
 	
+## Prepare the piece for starting the level. Hides the cell below, among other things 
 func prepare_start() -> void:
 	init_pos = position
 	selected = false
@@ -164,6 +197,7 @@ func prepare_start() -> void:
 	
 	hide_cell_below()
 	
+## Remove the piece from the board
 func remove() -> void:
 	if is_instance_valid(Global.board) and Global.board.selected_piece == self:
 		Global.board.selected_piece = null
@@ -171,6 +205,7 @@ func remove() -> void:
 	show_cell_below()
 	queue_free()
 	
+## Save its data to the board
 func save_data() -> void:
 	if not is_instance_valid(Global.board):
 		return
@@ -188,4 +223,6 @@ func get_nav_agent() -> NavigationAgent2D:
 	return $NavigationAgent2D
 	
 func get_character_name() -> String:
-	return PlayerCharacter.CHARACTER_NAMES[piece_character]
+	if piece_info != null:
+		return piece_info.name
+	return PlayerCharacter.get_character_name_static(piece_character)

@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://b7smflgakwncy"
+path="res://.godot/imported/14 Varan.ogg-b597d06908654a9ddcaaeb8c34f76e6e.oggvorbisstr"
+
+[deps]
+
+source_file="res://Audio/Soundtrack/Bosses/14 Varan.ogg"
+dest_files=["res://.godot/imported/14 Varan.ogg-b597d06908654a9ddcaaeb8c34f76e6e.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

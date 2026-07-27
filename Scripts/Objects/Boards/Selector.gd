@@ -1,5 +1,4 @@
-class_name BoardSelector
-extends Sprite2D
+class_name BoardSelector extends Sprite2D
 
 enum MovementStyle {
 	OUTSIDE_CELLS,
@@ -9,23 +8,27 @@ enum MovementStyle {
 @export var movement_style := MovementStyle.OUTSIDE_CELLS
 @export var board_outline: TileMapLayer
 @export var tilemap: TileMapLayer
-@export var message_window: Control
+@export var message_window: MessageWindow
 @export var board: Board
 
-# Speed (in pixels per frame for 60 fps)
+## Speed (in pixels per frame for 60 fps)
 var speed := Vector2()
 var next_speed := Vector2()
-# Current cell position in pixels
+## Current cell position in pixels
 var old_pos: Vector2
 var moved_at_all := false
 var ignore_player_input := false
-var playing_levels: Array[int] = []
+var playing_levels: Array[PackedScene] = []
 
 signal piece_collision(boss_collision: bool)
 signal stopped
 signal moved
 
 func _ready() -> void:
+	# This node is just to make the selector more easily selectable
+	# in the Godot editor, that is its sole purpose
+	$ColorRect.hide()
+	
 	position = map_to_tilemap(position)
 	old_pos = Vector2(position)
 
@@ -42,7 +45,7 @@ func _process(delta: float) -> void:
 		
 #region Movement
 		
-# Request movement in the direction of (dirx, diry) vector
+## Request movement in the direction of (dirx, diry) vector
 func move(dirx: float, diry: float) -> void:
 	dirx = signf(dirx)
 	diry = signf(diry)
@@ -59,7 +62,7 @@ func move(dirx: float, diry: float) -> void:
 	if next_speed.length() > 0:
 		moved_at_all = true
 		
-# When the movement should be stopped
+## When the movement should be stopped
 func stop_conditions() -> void:
 	var next_piece := get_next_cell_piece()
 	
@@ -82,8 +85,8 @@ func stop_conditions() -> void:
 	# The next cell is outside the camera limits
 	elif movement_style == MovementStyle.OUTSIDE_CELLS:
 		var next_cell := get_next_cell_pos()
-		var xlimit: int = $Camera2D.limit_right / 32 - 2
-		var ylimit: int = $Camera2D.limit_bottom / 32 - 2
+		var xlimit: int = get_viewport().get_camera_2d().limit_right / 32 - 2
+		var ylimit: int = get_viewport().get_camera_2d().limit_bottom / 32 - 2
 		if next_cell.x < 0 or next_cell.y < next_cell.x % 2 \
 			or next_cell.x > xlimit or next_cell.y > ylimit:
 			stop()
@@ -95,7 +98,7 @@ func update_movement(delta: float) -> void:
 		# If is stopped and movement is requested, move..
 		speed = next_speed
 		
-		if check_for_bosses(): return
+		# if check_for_bosses(): return
 		
 		# ..but be aware of things that should stop the movement
 		if not is_stopped():
@@ -122,7 +125,7 @@ func update_movement(delta: float) -> void:
 			
 			# Save the level from the current hex
 			if board.selected_piece:
-				playing_levels.append(get_level_id(get_current_cell()))
+				playing_levels.append(board.get_tile_level(get_current_cell()))
 			
 			if check_for_bosses(): return
 				
@@ -133,6 +136,9 @@ func update_movement(delta: float) -> void:
 			
 	position.x += speed.x * 60 * delta
 	position.y += speed.y * 60 * delta
+	
+	if speed.length() > 0:
+		get_viewport().get_camera_2d().global_position = global_position
 
 func is_stopped() -> bool:
 	return absf(speed.x) < 0.01 && absf(speed.y) < 0.01
@@ -164,19 +170,19 @@ func get_neighbor_bosses() -> Array[BoardPiece]:
 
 #region Tilemap-related code
 
-# Snap coords to tilemap cells
+## Snap coords to tilemap cells
 func map_to_tilemap(pos: Vector2, tm: TileMapLayer = tilemap) -> Vector2:
 	return tm.map_to_local(tm.local_to_map(pos)) - Vector2(0, 7)
 	
-# Convert local coords into tilemap cell coords
+## Convert local coords into tilemap cell coords
 func get_cell_pos(pos: Vector2) -> Vector2i:
 	return tilemap.local_to_map(pos)
 	
-# Get cell from the position
+## Get cell from the position
 func cell_from_pos(pos: Vector2i) -> Vector2i:
 	return tilemap.get_cell_atlas_coords(pos)
 	
-# Check if a cell exists
+## Check if a cell exists
 func cell_exists(pos: Vector2i) -> bool:
 	return board_outline.get_cell_atlas_coords(pos).x >= 0
 	
@@ -189,7 +195,7 @@ func next_cell_exists() -> bool:
 	return cell_exists(get_next_cell_pos())
 	
 func get_current_cell() -> Vector2i:
-	return cell_from_pos(get_cell_pos(old_pos))
+	return get_cell_pos(old_pos)
 	
 #endregion
 
@@ -199,7 +205,7 @@ func reset_playing_levels() -> void:
 func get_level_id(tile: Vector2i) -> int:
 	return tile.x + tile.y * 5
 	
-# Get the piece (if exists) from the next cell
+## Get the piece (if exists) from the next cell
 func get_next_cell_piece() -> Sprite2D:
 	for p: Sprite2D in board.get_board_pieces():
 		if p.get_cell_pos() == get_next_cell_pos():

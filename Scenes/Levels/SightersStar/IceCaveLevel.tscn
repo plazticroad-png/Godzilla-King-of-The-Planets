@@ -1,0 +1,56 @@
+[gd_scene format=3 uid="uid://djtt6oyiy2atc"]
+
+[ext_resource type="PackedScene" uid="uid://jnprrhsi16ey" path="res://Scenes/Levels/BaseLevel.tscn" id="1_o57fj"]
+[ext_resource type="AudioStream" uid="uid://dtbkqe4jtkpoh" path="res://Audio/Soundtrack/Levels/SightersStarBoard.ogg" id="2_mf4u8"]
+[ext_resource type="Texture2D" uid="uid://b73xlp23vkcoj" path="res://Sprites/Levels/TestLevel/AbandonedSnowMinehills.png" id="3_gxemj"]
+[ext_resource type="Texture2D" uid="uid://c7ewuuu32s321" path="res://Sprites/Levels/TestLevel/ICEYROCKS.png" id="4_ucniv"]
+[ext_resource type="Texture2D" uid="uid://cbadsiwjk3jym" path="res://Sprites/Levels/TestLevel/ice_rock5.png" id="5_b64vt"]
+[ext_resource type="Texture2D" uid="uid://5ekeqf4w1kir" path="res://Sprites/Levels/TestLevel/BICFE0.png" id="7_uaobe"]
+[ext_resource type="Texture2D" uid="uid://bbgax7mevs1re" path="res://Sprites/Levels/TestLevel/BICFD0.png" id="8_idh7q"]
+[ext_resource type="Texture2D" uid="uid://djiqyuyf4ecl3" path="res://Sprites/Levels/TestLevel/BICFC0.png" id="9_afv7r"]
+[ext_resource type="Texture2D" uid="uid://b5eyxbtl6sgnd" path="res://Sprites/Levels/TestLevel/ice_rock4.png" id="9_uaobe"]
+[ext_resource type="Texture2D" uid="uid://cpyur53gu0mun" path="res://Sprites/Levels/TestLevel/BICFA0.png" id="10_idh7q"]
+
+[node name="Level" unique_id=27434467 instance=ExtResource("1_o57fj")]
+music = ExtResource("2_mf4u8")
+
+[node name="Parallax2D" type="Parallax2D" parent="Background" parent_id_path=PackedInt32Array(1330395296) index="0" unique_id=2087077905]
+scroll_scale = Vector2(0.5, 1)
+repeat_size = Vector2(320, 0)
+
+[node name="TextureRect" type="TextureRect" parent="Background/Parallax2D" index="0" unique_id=1973351097]
+offset_top = 168.0
+offset_right = 40.0
+offset_bottom = 208.0
+texture = ExtResource("3_gxemj")
+
+[node name="Camera" parent="." index="1" unique_id=1767866415]
+limit_right = 640
+
+[node name="Floor" parent="." index="2" unique_id=1069161044]
+texture = ExtResource("4_ucniv")
+
+[node name="IceRock5" type="Sprite2D" parent="." index="5" unique_id=1105896234]
+show_behind_parent = true
+position = Vector2(298, 200)
+texture = ExtResource("5_b64vt")
+
+[node name="Bicfe0" type="Sprite2D" parent="." index="6" unique_id=1101287340]
+position = Vector2(356, 181)
+texture = ExtResource("7_uaobe")
+
+[node name="Bicfd0" type="Sprite2D" parent="." index="7" unique_id=509331627]
+position = Vector2(9, 194)
+texture = ExtResource("8_idh7q")
+
+[node name="Bicfc0" type="Sprite2D" parent="." index="8" unique_id=1584556830]
+position = Vector2(167, 187)
+texture = ExtResource("9_afv7r")
+
+[node name="IceRock4" type="Sprite2D" parent="." index="9" unique_id=1053718302]
+position = Vector2(-271, 229)
+texture = ExtResource("9_uaobe")
+
+[node name="Bicfa0" type="Sprite2D" parent="." index="10" unique_id=1323250545]
+position = Vector2(611, 172)
+texture = ExtResource("10_idh7q")

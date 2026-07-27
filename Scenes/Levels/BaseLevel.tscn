@@ -1,31 +1,35 @@
-[gd_scene load_steps=6 format=3 uid="uid://jnprrhsi16ey"]
+[gd_scene format=3 uid="uid://jnprrhsi16ey"]
 
-[ext_resource type="Script" path="res://Scripts/Levels/Level.gd" id="1_kceot"]
-[ext_resource type="Script" path="res://Scripts/Levels/Camera.gd" id="2_utxvs"]
+[ext_resource type="Script" uid="uid://b7jb3ox6oy7x5" path="res://Scripts/Levels/Level.gd" id="1_kceot"]
+[ext_resource type="Script" uid="uid://b35dvbkhurlag" path="res://Scripts/Levels/Camera.gd" id="2_utxvs"]
 [ext_resource type="PackedScene" uid="uid://bono4mu6juvo8" path="res://Objects/Levels/HUD.tscn" id="4_cq3ox"]
 [ext_resource type="PackedScene" uid="uid://cx8rkmxhgw3oc" path="res://Objects/Levels/Floor.tscn" id="4_tmjpl"]
 [ext_resource type="PackedScene" uid="uid://bdedrxocj46sr" path="res://Objects/Characters/PlayerCharacter.tscn" id="5_vpd3j"]
 
-[node name="Level" type="Node2D"]
+[node name="Level" type="Node2D" unique_id=27434467]
 script = ExtResource("1_kceot")
 
-[node name="Background" type="Node2D" parent="."]
+[node name="Background" type="Node2D" parent="." unique_id=1330395296]
+z_index = -100
 
-[node name="Camera" type="Camera2D" parent="." node_paths=PackedStringArray("target")]
+[node name="Camera" type="Camera2D" parent="." unique_id=1767866415 node_paths=PackedStringArray("target")]
 position = Vector2(56, 120)
 limit_left = 0
 limit_top = 0
 limit_right = 500
 limit_bottom = 240
+editor_draw_limits = true
 script = ExtResource("2_utxvs")
 target = NodePath("../Player")
 
-[node name="Floor" parent="." instance=ExtResource("4_tmjpl")]
+[node name="Floor" parent="." unique_id=1069161044 instance=ExtResource("4_tmjpl")]
+z_index = -10
 offset_top = 208.0
 offset_bottom = 240.0
 
-[node name="Player" parent="." instance=ExtResource("5_vpd3j")]
+[node name="Player" parent="." unique_id=210162875 instance=ExtResource("5_vpd3j")]
 position = Vector2(53, 181)
 
-[node name="HUD" parent="." node_paths=PackedStringArray("player") instance=ExtResource("4_cq3ox")]
+[node name="HUD" parent="." unique_id=1678344847 node_paths=PackedStringArray("player") instance=ExtResource("4_cq3ox")]
+layer = 20
 player = NodePath("../Player")

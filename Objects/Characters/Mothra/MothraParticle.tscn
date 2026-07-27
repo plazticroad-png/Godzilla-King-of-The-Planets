@@ -1,0 +1,105 @@
+[gd_scene load_steps=12 format=3 uid="uid://wk0ngrdkwnbv"]
+
+[ext_resource type="Texture2D" uid="uid://di5yqmheu2g18" path="res://Sprites/Characters/Mothra/particles.png" id="1_ok31u"]
+[ext_resource type="Script" uid="uid://b238jtllubx8n" path="res://Scripts/Objects/Characters/MothraParticle.gd" id="2_v1kq8"]
+[ext_resource type="PackedScene" uid="uid://bi7wq6b7la5ki" path="res://Objects/AttackComponent.tscn" id="3_f4212"]
+[ext_resource type="Script" uid="uid://b1bjey1kvrefj" path="res://Scripts/Objects/Attacks/AttackDescription.gd" id="4_nmrfy"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_5tse6"]
+atlas = ExtResource("1_ok31u")
+region = Rect2(0, 12, 9, 8)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_akx7u"]
+atlas = ExtResource("1_ok31u")
+region = Rect2(0, 24, 48, 13)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_8dfex"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_5tse6")
+}],
+"loop": true,
+"name": &"EyeBeam",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_akx7u")
+}],
+"loop": true,
+"name": &"Wing",
+"speed": 5.0
+}]
+
+[sub_resource type="Animation" id="Animation_yy0va"]
+resource_name = "Flash"
+length = 0.04
+loop_mode = 1
+step = 0.02
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath(".:visible")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.02),
+"transitions": PackedFloat32Array(1, 1),
+"update": 1,
+"values": [true, false]
+}
+
+[sub_resource type="Animation" id="Animation_o8vym"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath(".:visible")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [true]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_4aq1u"]
+_data = {
+&"Flash": SubResource("Animation_yy0va"),
+&"RESET": SubResource("Animation_o8vym")
+}
+
+[sub_resource type="Resource" id="Resource_hgkoj"]
+script = ExtResource("4_nmrfy")
+name = "Main"
+simple_or_advanced = 0
+other_information = Array[String]([])
+type = 2
+damage_amount = 2.0
+hitbox_name = ""
+hurt_time = -1.0
+start_time_offset = 0.0
+animation_name = ""
+animation_name2 = ""
+time_length = -1.0
+reset_animation_before = true
+reset_animation_after = true
+function_name = ""
+
+[node name="MothraParticle" type="AnimatedSprite2D"]
+sprite_frames = SubResource("SpriteFrames_8dfex")
+animation = &"Wing"
+script = ExtResource("2_v1kq8")
+
+[node name="Timer" type="Timer" parent="."]
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+&"": SubResource("AnimationLibrary_4aq1u")
+}
+
+[node name="AttackComponent" parent="." instance=ExtResource("3_f4212")]
+initial_attack = "Main"
+attacks = Array[ExtResource("4_nmrfy")]([SubResource("Resource_hgkoj")])

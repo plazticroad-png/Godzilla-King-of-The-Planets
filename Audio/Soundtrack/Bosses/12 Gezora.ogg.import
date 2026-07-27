@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://bj8b8hlgtmglu"
+path="res://.godot/imported/12 Gezora.ogg-cd3b168c8b78299bd98da1a72dbb3ee6.oggvorbisstr"
+
+[deps]
+
+source_file="res://Audio/Soundtrack/Bosses/12 Gezora.ogg"
+dest_files=["res://.godot/imported/12 Gezora.ogg-cd3b168c8b78299bd98da1a72dbb3ee6.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

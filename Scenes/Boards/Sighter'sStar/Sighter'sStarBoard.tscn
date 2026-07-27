@@ -1,0 +1,98 @@
+[gd_scene format=4 uid="uid://ci56ue888r62n"]
+
+[ext_resource type="PackedScene" uid="uid://d2do8ilhab482" path="res://Scenes/Boards/BaseBoard.tscn" id="1_rjjjp"]
+[ext_resource type="AudioStream" uid="uid://dtbkqe4jtkpoh" path="res://Audio/Soundtrack/Levels/SightersStarBoard.ogg" id="2_yku8l"]
+[ext_resource type="Texture2D" uid="uid://cusg2lwvfebxg" path="res://Sprites/Levels/TestLevel/board-2.png" id="3_yf0qr"]
+[ext_resource type="PackedScene" uid="uid://cv04f1f1pkbcs" path="res://Scenes/Boards/TransitionLevel.tscn" id="4_0f71i"]
+[ext_resource type="PackedScene" uid="uid://cavxehselt3he" path="res://Objects/Boards/Piece.tscn" id="5_yku8l"]
+
+[sub_resource type="NavigationPolygon" id="NavigationPolygon_1ofnh"]
+vertices = PackedVector2Array(-16, -1, -21, -7, -16, -13, -11, -8, -8, 7, 16, 0, 22, 6, 16, 12, 10, 7, -16, 12, -22, 7, 16, -13, 21, -9, 11, -9, 6, 16, -6, 16, 6, -16, -7, -16)
+polygons = Array[PackedInt32Array]([PackedInt32Array(0, 1, 2, 3, 4), PackedInt32Array(5, 6, 7, 8), PackedInt32Array(9, 10, 0, 4), PackedInt32Array(11, 12, 5, 13), PackedInt32Array(8, 14, 15, 4, 3), PackedInt32Array(16, 13, 5, 8, 3, 17)])
+outlines = Array[PackedVector2Array]([PackedVector2Array(-6.71751, -16, 6.01041, -16, 10.6066, -9.19239, 16, -12.7279, 20.8597, -8.83884, 16, 0, 22.2739, 6.01041, 16, 12.3744, 10.2531, 7.42462, 6.36396, 16, -6.36396, 16, -8.48528, 7.42462, -16, 12.3744, -21.5668, 7.07107, -16, -1.41422, -20.8596, -7.42462, -16, -12.7279, -10.6066, -8.48528)])
+source_geometry_group_name = &"navigation_polygon_source_group"
+agent_radius = 0.0
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_ht1vj"]
+resource_name = "Outline"
+texture = ExtResource("3_yf0qr")
+texture_region_size = Vector2i(48, 34)
+use_texture_padding = false
+0:0/next_alternative_id = 2
+0:0/0 = 0
+0:0/0/navigation_layer_0/polygon = SubResource("NavigationPolygon_1ofnh")
+0:0/1 = 1
+1:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_70cbi"]
+resource_name = "Icons"
+texture = ExtResource("3_yf0qr")
+margins = Vector2i(48, 0)
+texture_region_size = Vector2i(48, 32)
+0:0/0 = 0
+1:0/0 = 0
+2:0/0 = 0
+3:0/0 = 0
+0:1/0 = 0
+1:1/0 = 0
+2:1/0 = 0
+3:1/0 = 0
+4:0/0 = 0
+4:1/0 = 0
+
+[sub_resource type="TileSetScenesCollectionSource" id="TileSetScenesCollectionSource_w55la"]
+resource_name = "TransitionLevel"
+scenes/1/scene = ExtResource("4_0f71i")
+
+[sub_resource type="TileSet" id="TileSet_86xdf"]
+tile_shape = 2
+tile_layout = 1
+tile_offset_axis = 1
+tile_size = Vector2i(32, 32)
+navigation_layer_0/layers = 1
+custom_data_layer_0/name = "Level"
+custom_data_layer_0/type = 24
+custom_data_layer_1/name = "TransitionLevel"
+custom_data_layer_1/type = 1
+sources/0 = SubResource("TileSetAtlasSource_ht1vj")
+sources/1 = SubResource("TileSetAtlasSource_70cbi")
+sources/2 = SubResource("TileSetScenesCollectionSource_w55la")
+
+[node name="Board" unique_id=1123494355 instance=ExtResource("1_rjjjp")]
+board_name = "Sighters Star"
+music = ExtResource("2_yku8l")
+board_id = "SightersStar"
+
+[node name="Board Icons" parent="Board" index="1"]
+tile_map_data = PackedByteArray("AAAAAAAAAQAAAAAAAAADAAMAAgAAAAAAAQABAAAAAQAAAAAAAAAAAAEAAQAAAAAAAAABAAEAAQAAAAAAAAACAAAAAQAAAAAAAAADAAAAAQAAAAAAAAAEAAAAAQAAAAAAAAAFAAAAAQAAAAAAAAAGAAAAAQAAAAAAAAAHAAEAAQAAAAAAAAAIAAAAAQAAAAAAAAAJAAAAAQAAAAAAAAAKAAAAAQAAAAAAAAALAAAAAQAAAAAAAAAMAAAAAQAAAAAAAAANAAAAAQAAAAAAAAAOAAAAAQAAAAAAAAAOAAEAAQAAAAAAAAANAAEAAQAAAAAAAAAAAAIAAQAAAAAAAAAAAAMAAQAAAAAAAAAOAAIAAQAAAAAAAAAOAAMAAQAAAAAAAAAAAAQAAQAAAAAAAAAAAAUAAQAAAAAAAAAAAAYAAQAAAAAAAAABAAcAAQAAAAAAAAACAAcAAQAAAAAAAAAEAAcAAQAAAAAAAAAGAAcAAQAAAAAAAAAHAAcAAQAAAAAAAAADAAgAAQAAAAAAAAAFAAgAAQAAAAAAAAAIAAcAAQAAAAAAAAAKAAcAAQAAAAAAAAAMAAcAAQAAAAAAAAANAAcAAQAAAAAAAAAOAAYAAQAAAAAAAAAOAAUAAQAAAAAAAAAOAAQAAQAAAAAAAAACAAIAAQACAAAAAAACAAMAAQACAAAAAAADAAQAAQACAAAAAAAEAAMAAQACAAAAAAAEAAIAAQACAAAAAAADAAIAAQACAAAAAAAFAAMAAQAAAAEAAAADAAUAAQAAAAAAAAAHAAQAAQABAAAAAAAGAAYAAQABAAAAAAAIAAYAAQABAAAAAAAGAAEAAQABAAAAAAAIAAEAAQABAAAAAAAHAAMAAQAAAAAAAAAHAAUAAQAAAAAAAAAJAAgAAQAAAAAAAAALAAgAAQAAAAAAAAAOAAcAAQAAAAAAAAANAAgAAQAAAAAAAAABAAYAAQAAAAAAAAAAAAcAAQAAAAAAAAABAAgAAQAAAAAAAAAHAAYAAQADAAAAAAAHAAIAAQADAAAAAAAIAAMAAQAAAAAAAAAIAAQAAQAAAAAAAAAGAAMAAQAAAAEAAAAGAAQAAQAAAAEAAAAJAAQAAQAAAAAAAAAKAAMAAQAAAAAAAAALAAMAAQAAAAAAAAAMAAIAAQAAAAAAAAANAAIAAQAAAAAAAAAKAAQAAQAAAAAAAAALAAUAAQAAAAAAAAAMAAUAAQAAAAAAAAANAAYAAQAAAAAAAAACAAQAAQACAAEAAAADAAYAAQACAAEAAAACAAUAAQACAAEAAAAEAAQAAQAAAAEAAAAEAAUAAQAAAAEAAAAFAAUAAQAAAAEAAAAFAAQAAQACAAEAAAANAAQAAQAAAAEAAAAMAAMAAQAAAAEAAAAMAAQAAQAAAAEAAAALAAQAAQADAAAAAAA=")
+tile_set = SubResource("TileSet_86xdf")
+
+[node name="Dummy1" parent="Board/Board Icons/Board Pieces" index="1" unique_id=1197628698 instance=ExtResource("5_yku8l")]
+position = Vector2(240, 136)
+scale = Vector2(-1, 1)
+piece_type = 1
+
+[node name="Dummy2" parent="Board/Board Icons/Board Pieces" index="2" unique_id=1986774636 instance=ExtResource("5_yku8l")]
+position = Vector2(400, 88)
+scale = Vector2(-1, 1)
+piece_type = 1
+
+[node name="Dummy3" parent="Board/Board Icons/Board Pieces" index="3" unique_id=1112008541 instance=ExtResource("5_yku8l")]
+position = Vector2(400, 184)
+scale = Vector2(-1, 1)
+piece_type = 1
+
+[node name="Mothra" parent="Board/Board Icons/Board Pieces" index="4" unique_id=2010202836 instance=ExtResource("5_yku8l")]
+position = Vector2(16, 56)
+region_rect = Rect2(0, 96, 48, 48)
+piece_character = 1
+
+[node name="Selector" parent="Board/Board Icons" index="1"]
+position = Vector2(15, 23)
+
+[node name="Camera2D" parent="Board/Board Icons/Selector" index="1"]
+limit_right = 500
+limit_bottom = 310
+
+[node name="TransitionLevel" parent="Board" index="3" unique_id=980434442 instance=ExtResource("4_0f71i")]
+position = Vector2(112, 107)

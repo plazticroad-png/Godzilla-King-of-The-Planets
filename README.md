@@ -1,5 +1,5 @@
 # Godotzilla
-Godotzilla is a Godzilla: Monster of Monsters-styled framework made for Godot 4.3.
+Godotzilla is a Godzilla: Monster of Monsters-styled framework made for Godot 4.4.
 
 This framework can be used for anything you want, this includes but not limited to:
 - GMoM remakes
@@ -17,8 +17,7 @@ This framework can be used for anything you want, this includes but not limited 
   - "Pass word game"
   - Settings
   - Credits
-- Save system
-  - With encryption and (hopefully working) protection against using other people's save files
+- Save system with encryption
 - Wide screen support (togglable)
 - Gamepad support
   - Tested with cheap controllers as well as Dualshock 4 and Xbox One controllers
@@ -27,8 +26,7 @@ This framework can be used for anything you want, this includes but not limited 
 - Reusable components for characters and enemies:
   - State machine
   - Health component, power component, attack component
-- [Tutorials!](Tutorials) (You should at least check out the "Framework overview" one, it also includes
-  how to properly import the framework into Godot without errors)
+- [Tutorials!](Tutorials)
 - And more!
 
 ## Credits
@@ -37,6 +35,9 @@ This framework can be used for anything you want, this includes but not limited 
 - Cioss - NES controller sprite for "Controls" menu
 - Special thanks to MadzillaKOTH and Dino for following the development
   of the framework, giving me motivation to work on it and testing and Z-9 Lurker as well for testing
+- Special thanks to the framework testers: MadzillaKOTH, Dino, Z-9 Lurker and LasagaIviolar
+- [Godot Engine](https://godotengine.org/) and its [contributors](https://github.com/godotengine/godot/blob/master/AUTHORS.md)
+  for the awesome game engine this framework was made for
 - "Godzilla: Monster of Monsters" NES game © Toho Co., Ltd. & Compile
 - Godzilla and related characters © Toho Co., Ltd.
 - Nintendo Entertainment System (NES) © Nintendo

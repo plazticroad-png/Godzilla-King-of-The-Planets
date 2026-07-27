@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://c64xkwkrlnikj"
+path="res://.godot/imported/26 Unused 3.ogg-f9460396df96f71b7487f04249611e87.oggvorbisstr"
+
+[deps]
+
+source_file="res://Audio/Soundtrack/Levels/26 Unused 3.ogg"
+dest_files=["res://.godot/imported/26 Unused 3.ogg-f9460396df96f71b7487f04249611e87.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

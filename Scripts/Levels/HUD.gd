@@ -1,8 +1,9 @@
 extends CanvasLayer
 
-@export var player: PlayerCharacter = null
-@export var boss: PlayerCharacter = null
+@export var player: GameCharacter = null
+@export var boss: GameCharacter = null
 @export var boss_bar_color: Color
+## The length of the boss fight in seconds. Put 0 if you don't want to use the timer for the fight.
 @export var boss_timer_seconds := 60
 
 ## Runs the timeout signal every second
@@ -12,6 +13,7 @@ var vertical_size := 0
 
 ## Runs when the boss timer is over and the battle should stop
 signal boss_timer_timeout
+signal hud_ready
 
 func _ready() -> void:
 	Global.widescreen_changed.connect(adapt_to_content_size)
@@ -30,33 +32,40 @@ func _ready() -> void:
 	
 	# Setup the boss bars if there's a boss in the scene
 	if is_instance_valid(boss):
+		if boss is PlayerCharacter:
+			await (boss as PlayerCharacter).character_ready
 		setup_character_listener(boss, $BossCharacter)
 		
 		$BgRect.size.y = 72
 		vertical_size = 80
-		$BossCharacter.visible = true
+		show_boss_ui()
 		var boss_bar: ColorRect = $BossCharacter/BgRect2
 		boss_bar.color = boss_bar_color
 		boss_bar.size.x = Global.get_content_size().x
 		
 		var timer_text: Label = $BossCharacter/TimerText
-		timer_text.position = $PlayerCharacter/ScoreMeter.position
-		timer_text.text = str(boss_timer_seconds)
-		
-		boss_timer_second.start()
-		boss_timer_second.timeout.connect(func() -> void:
-			boss_timer_seconds -= 1
+		if boss_timer_seconds > 0:
+			timer_text.position = $PlayerCharacter/ScoreMeter.position
 			timer_text.text = str(boss_timer_seconds)
-			if boss_timer_seconds <= 0:
-				boss_timer_timeout.emit()
-				boss_timer_second.stop()
-			)
+			
+			boss_timer_second.start()
+			boss_timer_second.timeout.connect(func() -> void:
+				boss_timer_seconds -= 1
+				timer_text.text = str(boss_timer_seconds)
+				if boss_timer_seconds <= 0:
+					boss_timer_timeout.emit()
+					boss_timer_second.stop()
+				)
+		else:
+			timer_text.hide()
 	else:
 		$BgRect.size.y = 48
 		vertical_size = 48
 		$BossCharacter.visible = false
 		
-func setup_character_listener(character: PlayerCharacter, group: Node2D) -> void:
+	hud_ready.emit()
+		
+func setup_character_listener(character: GameCharacter, group: Node2D) -> void:
 	# Set the character's name in the HUD
 	group.get_node("CharacterName").text = character.get_character_name()
 	
@@ -65,7 +74,17 @@ func setup_character_listener(character: PlayerCharacter, group: Node2D) -> void
 	
 	# Initial life/power bars and/or level text setup
 	
-	update_character_level(group, character.level, int(character.health.max_value / 8))
+	if character is PlayerCharacter:
+		update_character_level(group, (character as PlayerCharacter).level,
+			int(character.health.max_value / 8))
+			
+		# Update the character level (life/power bars and/or level text)
+		(character as PlayerCharacter).level_amount_changed.connect(
+			func(new_value: int, new_bar_count: int) -> void:
+				update_character_level(group, new_value, new_bar_count)
+				)
+	else:
+		update_character_level(group, 0, int(character.health.max_value / 8))
 	
 	life_bar.initial_value = character.health.value
 	life_bar.target_value = character.health.value
@@ -75,12 +94,6 @@ func setup_character_listener(character: PlayerCharacter, group: Node2D) -> void
 	character.health.value_changed.connect(func(new_value: float) -> void:
 		life_bar.target_value = new_value
 		)
-	
-	# Update the character level (life/power bars and/or level text)
-	character.level_amount_changed.connect(
-		func(new_value: int, new_bar_count: int) -> void:
-			update_character_level(group, new_value, new_bar_count)
-			)
 	
 	# Update the power bar
 	character.power.value_changed.connect(func(new_value: float) -> void:
@@ -124,3 +137,15 @@ func adapt_to_content_size() -> void:
 	
 	var score := $PlayerCharacter/ScoreMeter
 	score.position.x = width / 2 - score.size.x / 2 - 8
+
+func pause_boss_timer() -> void:
+	boss_timer_second.paused = true
+	
+func unpause_boss_timer() -> void:
+	boss_timer_second.paused = false
+
+func show_boss_ui() -> void:
+	$BossCharacter.show()
+
+func hide_boss_ui() -> void:
+	$BossCharacter.hide()

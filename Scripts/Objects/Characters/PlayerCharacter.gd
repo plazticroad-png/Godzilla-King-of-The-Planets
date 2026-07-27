@@ -1,5 +1,4 @@
-class_name PlayerCharacter
-extends CharacterBody2D
+class_name PlayerCharacter extends GameCharacter
 
 #region General constants, variables and signals
 
@@ -19,48 +18,41 @@ enum State {
 	ATTACK,
 }
 
-enum Attack {
-	# Attacks that are common for ground characters
-	PUNCH,
-	KICK,
-	
-	# Godzilla attacks
-	TAIL_WHIP,
-	HEAT_BEAM,
-	
-	# Mothra attacks
-	EYE_BEAM,
-	WING_ATTACK,
-}
-
-const CHARACTER_NAMES: Array[String] = [
-	"Godzilla",
-	"Mothra",
-]
-
-const BaseBarCount: Array[int] = [
-	6, # Godzilla
-	8, # Mothra
+const SKINS: Array[Array] = [
+	[
+		"res://Objects/Characters/Godzilla/Godzilla.tscn",
+		"res://Objects/Characters/Godzilla/GodzillaInfo.tres",
+	],
+	[
+		"res://Objects/Characters/Mothra/Mothra.tscn",
+		"res://Objects/Characters/Mothra/MothraInfo.tres",
+	],
 ]
 
 @export var character := PlayerCharacter.Type.GODZILLA
 
-@export var is_player := true
-@export var enable_intro := true
-@export var enable_attacks := true
-## If true, the player object will face the movement direction
-@export var allow_direction_changing := false
-
 @export_enum("Right:1", "Left:-1")
 var direction: int = 1:
 	set(value):
-		direction = value
-		if is_instance_valid(skin) and value != 0:
-			skin.scale.x = value
+		if value == 0:
+			return
+		direction = signi(value)
+		if is_instance_valid(skin):
+			skin.scale.x = direction
+			attack.scale.x = direction
 
-@onready var collision: CollisionShape2D = $Collision
-@onready var health: HealthComponent = $HealthComponent
-@onready var power: PowerComponent = $PowerComponent
+@export_category("Features")
+## If not checked, then the PlayerCharacter is treated as a boss
+## and not a character for the current player
+@export var is_player := true
+## Enable intro with steps and roaring, after which the player gets control and the level starts
+@export var enable_intro := true
+## If the attacks are not desired for the current level, uncheck this property
+@export var enable_attacks := true
+## If checked, the player can change the character's facing direction while moving left or right
+@export var allow_direction_changing := false
+@export var enable_bottomless_pits := true
+
 @onready var attack: AttackComponent = $AttackComponent
 @onready var state: StateMachine = $StateMachine
 
@@ -70,11 +62,14 @@ var gravity: float = ProjectSettings.get_setting("physics/2d/default_gravity")
 var level := 1
 var xp := 0
 var save_position: Array[Vector2]
+var _intro_ended := false
+var _died_from_bottomless_pit := false
 
 var body: AnimatedSprite2D
-var skin: Node2D
+var skin: PlayerSkin
 var animation_player: AnimationPlayer
 
+signal character_ready
 signal intro_ended
 signal level_amount_changed(new_value: int, new_bar_count: int)
 signal xp_amount_changed(new_value: int)
@@ -82,7 +77,7 @@ signal xp_amount_changed(new_value: int)
 #endregion
 
 func _ready() -> void:
-	collision.shape = collision.shape.duplicate()
+	intro_ended.connect(func() -> void: _intro_ended = true)
 	
 	if is_player:
 		Global.player = self
@@ -101,47 +96,17 @@ func _ready() -> void:
 	setup_input(inputs_pressed)
 	
 	save_position.resize(60)
-	
-	move_speed = 1 * 60
-	load_state()
 			
 	await Global.get_current_scene().ready
 		
-	# PlayerCharacter-specific setup
-	match character:
-		PlayerCharacter.Type.GODZILLA:
-			# null here means the game shouldn't load a new skin as it's already loaded
-			change_skin(null)
-			set_collision(Vector2(20, 56), Vector2(0, -1))
-			
-			get_sfx("Step").stream = load("res://Audio/SFX/GodzillaStep.wav")
-			get_sfx("Roar").stream = load("res://Audio/SFX/GodzillaRoar.wav")
-			move_state = State.WALK
-			
-			# We set the character-specific position so when the character
-			# walks in a sudden walking animation frame change won't happen
-			# (walk_frame is set to 0 when the player gets control)
-			if is_player and enable_intro:
-				position.x = -35
-		
-		PlayerCharacter.Type.MOTHRA:
-			change_skin(load("res://Objects/Characters/Mothra.tscn").instantiate())
-			set_collision(Vector2(36, 14), Vector2(-4, 1))
-			
-			get_sfx("Step").stream = load("res://Audio/SFX/MothraStep.wav")
-			get_sfx("Roar").stream = load("res://Audio/SFX/MothraRoar.wav")
-			move_state = State.FLY
-			position.y -= 40
-			move_speed = 2 * 60
-			
-			if is_player and enable_intro:
-				position.x = -37
-			
+	# Skin creation and character-specific setup (inside of the skin's _init and _ready)
+	change_skin(load(SKINS[character][0]).instantiate())
+	load_state()
+
 	# Setup for all characters
 	direction = direction
 	body = $Skin/Body
 	animation_player = $Skin/AnimationPlayer
-	move_child(collision, -1)
 	
 	if is_flying():
 		animation_player.play("Idle")
@@ -152,31 +117,52 @@ func _ready() -> void:
 			intro_ended.emit()
 	
 	state.init()
+	character_ready.emit()
 		
 func _physics_process(delta: float) -> void:
+	super._physics_process(delta)
+	
 	if state.current != State.DEAD and not is_on_floor() and not is_flying():
 		velocity.y += gravity * delta
 
 	move_and_slide()
 	save_position.pop_back()
 	save_position.insert(0, Vector2(position))
+	
+	var camera := get_viewport().get_camera_2d()
+	if state.current != State.DEAD and is_instance_valid(camera) and global_position.y > camera.limit_bottom - 16:
+		health.set_value(0)
+		_died_from_bottomless_pit = true
 
 func _process(_delta: float) -> void:
 	process_input()
 	
-func change_skin(new_skin: Node2D) -> void:
+func change_skin(new_skin: PlayerSkin) -> void:
 	var prev_skin: Node2D = $Skin
-	if new_skin == null:
-		move_child(prev_skin, -1)
-		skin = prev_skin
-		return
-	
-	remove_child(prev_skin)
-	prev_skin.queue_free()
+
+	if prev_skin != null:
+		remove_child(prev_skin)
+		prev_skin.queue_free()
 	
 	new_skin.name = "Skin"
 	add_child(new_skin)
 	skin = new_skin
+	setup_character(skin)
+	
+func setup_character(new_skin: PlayerSkin) -> void:
+	set_collision(new_skin.get_node("Collision"))
+	# Bar count is set on the board via the board piece character data
+	move_state = new_skin.move_state
+	move_speed = new_skin.move_speed * 60
+	if state.current == State.LEVEL_INTRO and enable_intro:
+		position.x = new_skin.intro_start_x
+	if not _intro_ended:
+		position.y += new_skin.intro_y_offset
+	
+	attack.hitboxes = new_skin.attack_hitboxes
+	attack.attack_animation_player = new_skin.attack_animation_player
+	attack.attacks.assign(new_skin.attacks)
+	attack.attack_function_node = new_skin.attack_function_callback_node
 	
 #region Input related
 	
@@ -211,20 +197,26 @@ func process_input() -> void:
 			inputs[i] = Input.is_action_pressed(INPUT_ACTIONS[i])
 			inputs_pressed[i] = Input.is_action_just_pressed(INPUT_ACTIONS[i])
 			
-# Useful for boss attacks in AI code
+func clear_inputs() -> void:
+	inputs[Inputs.XINPUT] = 0.0
+	inputs[Inputs.YINPUT] = 0.0
+	
+	inputs_pressed[Inputs.XINPUT] = 0
+	inputs_pressed[Inputs.YINPUT] = 0
+		
+	for i in range(Inputs.B, Inputs.size()):
+		inputs[i] = false
+		inputs_pressed[i] = false
+
+## Useful for boss attacks in AI code
 func simulate_input_press(key: Inputs) -> void:
 	inputs_pressed[key] = true
 	await get_tree().process_frame
 	inputs_pressed[key] = false
 	
 #endregion
-
-func use_attack(type: Attack) -> void:
-	if not enable_attacks or state.current in [State.DEAD or State.LEVEL_INTRO]:
-		return
-	$StateMachine/Attack.use(type)
 	
-# Set the current xp level
+## Set the current xp level
 func set_level(value: int, sfx := false) -> void:
 	if not is_player or level == value:
 		return
@@ -264,38 +256,67 @@ func add_xp(value: int) -> void:
 	xp_amount_changed.emit(xp)
 	
 func get_sfx(sfx_name: String) -> AudioStreamPlayer:
-	return get_node("SFX/" + sfx_name)
+	var path := "SFX/" + sfx_name
+	if skin.has_node(path):
+		return skin.get_node(path)
+	return get_node(path)
+	
+## Play a sound effect from the list of PlayerCharacter scene's SFXs or character-specific SFXs via skins
+func play_sfx(sfx_name: String) -> AudioStreamPlayer:
+	var sfx := get_sfx(sfx_name)
+	sfx.play()
+	return sfx
 	
 func get_character_name() -> String:
-	return CHARACTER_NAMES[character]
+	return skin.character_info.character_name
 	
 func is_flying() -> bool:
 	return move_state == State.FLY
 	
-func set_collision(size: Vector2, offset: Vector2) -> void:
-	collision.shape.size = size
-	collision.position = offset
+## Set the collision shape
+func set_collision(shape: CollisionShape2D) -> void:
+	get_children().map(func(c: Node) -> void:
+		if c is CollisionShape2D:
+			c.queue_free()
+		)
+	var new_shape: CollisionShape2D = shape.duplicate()
+	new_shape.show()
+	call_deferred("add_child", new_shape)
 	
 func is_hurtable() -> bool:
-	return state not in [State.LEVEL_INTRO, State.HURT, State.DEAD]
+	return state.current not in [State.LEVEL_INTRO, State.HURT, State.DEAD]
+	
+func should_replay_after_death() -> bool:
+	return _died_from_bottomless_pit
 
-func _on_health_damaged(_amount: float, hurt_time: float) -> void:
+func _on_health_damaged(_amount: float, attack: AttackDescription) -> void:
 	var attack_state := $StateMachine/Attack
-	if state.current == State.ATTACK and attack_state.current_attack == Attack.HEAT_BEAM:
-		hurt_time = 0
+	var hurt_state := $StateMachine/Hurt
+	var hurt_time := attack.hurt_time if attack != null else -1.0
+	if(state.current == State.ATTACK
+		and attack_state.current_attack.name == "HeatBeam"):
+			hurt_time = 0
 		
 	if hurt_time < 0:
 		hurt_time = 0.6
 	if hurt_time > 0:
-		$StateMachine/Hurt.hurt_time = hurt_time
+		hurt_state.hurt_time = hurt_time
 		state.current = State.HURT
-
+		
+	hurt_state.setup_from_attack(attack)
+		
+	if Global.controller_vibration and not Input.get_connected_joypads().is_empty():
+		var device := Input.get_connected_joypads()[0]
+		Input.start_joy_vibration(device, 0, 1, 0.4) # TODO: When we switch to Godot 4.6, swap these values
+		
 func _on_health_dead() -> void:
 	state.current = State.DEAD
 	power.set_empty()
 	
-# Load the character state from data from a board piece
+## Load the character state from data from a board piece
 func load_state(data: BoardPiece.CharacterData = null) -> void:
+	super.load_state(data)
+	
 	var bar_value := 0
 	if data == null:
 		bar_value = PlayerCharacter.calculate_bar_count(character, level) * 8
@@ -308,25 +329,27 @@ func load_state(data: BoardPiece.CharacterData = null) -> void:
 	set_level(data.level)
 	xp = data.xp
 	
-	health.resize(bar_value)
-	health.set_value(data.hp)
-	power.max_value = bar_value
-	power.value = bar_value
-	
-# Save the character state into a dictionary from a board piece
-func save_state(data: BoardPiece.CharacterData) -> void:
-	data.hp = health.value
-	data.bars = int(power.max_value / 8)
+## Save the character state into a dictionary from a board piece
+func save_state(data: BoardPiece.CharacterData = null) -> void:
+	super.save_state(data)
+	if data == null:
+		return
 	data.level = level
 	data.xp = xp
 
-func _on_attack_component_attacked(attacked_body: Node2D, amount: float) -> void:
+func _on_attack_component_attacked(attacked_body: Node2D, attack: AttackDescription) -> void:
 	if attacked_body is Enemy:
 		add_xp(5)
-		Global.add_score(int(20 * amount))
-
+		Global.add_score(int(20 * attack.damage_amount))
+		
+static func get_character_info(char_id: PlayerCharacter.Type) -> CharacterInfo:
+	return load(SKINS[char_id][1])
+		
 static func calculate_bar_count(char_id: PlayerCharacter.Type, char_level: int) -> int:
-	return BaseBarCount[char_id] + char_level - 1
+	return get_character_info(char_id).bar_count + char_level - 1
 	
 static func calculate_xp_amount(char_level: int) -> int:
 	return 100 + 50 * (char_level - 1)
+
+static func get_character_name_static(char_id: PlayerCharacter.Type) -> String:
+	return get_character_info(char_id).character_name

@@ -1,18 +1,35 @@
 extends Node
 
+const EXPLOSION = preload("uid://cpxp6boj611rb")
+const CAPSULE = preload("uid://hos7shkktc1k")
+const Capsule = preload("uid://pqn0sexvus23")
 const SCORE_MAX := 9999999
 
+## Reference to the main scene, i.e. container of all scenes
 var main: Node2D
 
 var _fade_player: AnimationPlayer
-var _fader: ColorRect
+var _fader: ShaderMaterial
+var _fade_rect: ColorRect
 
+## AudioStreamPlayer node dedicated to playing music in the game
 var music: AudioStreamPlayer
+## Current player
 var player: PlayerCharacter
+## Array of levels that the player will have to go through after the current one
 var playing_levels: Array[PackedScene] = []
+## Current planet board
 var board: Board
+## Amount of score the player currently has
 var score := 0
-var level_data: Level.GameplayData = null
+## Important gameplay that should be passed between levels 
+var level_data: Level.GameplayData
+var hud: HUD 
+var last_scene: PackedScene
+
+var controller_vibration := true
+
+var _initial_scene := true
 
 signal widescreen_changed
 signal fullscreen_changed(flag: bool) # only through use_fullscreen()
@@ -29,6 +46,7 @@ func _process(_delta: float) -> void:
 		
 #region Game window related
 
+## Returns the default game resolution on 1x scaling
 func get_default_resolution() -> Vector2i:
 	return Vector2i(
 		ProjectSettings.get_setting("display/window/size/viewport_width"),
@@ -47,7 +65,7 @@ func is_widescreen() -> bool:
 	return get_content_size().x > get_default_resolution().x
 	
 func use_fullscreen(flag: bool) -> void:
-	const FULLSCREEN = DisplayServer.WINDOW_MODE_FULLSCREEN
+	const FULLSCREEN := DisplayServer.WINDOW_MODE_FULLSCREEN
 	if flag and not is_fullscreen():
 		DisplayServer.window_set_mode(FULLSCREEN)
 		fullscreen_changed.emit(true)
@@ -56,14 +74,32 @@ func use_fullscreen(flag: bool) -> void:
 		fullscreen_changed.emit(false)
 		
 func is_fullscreen() -> bool:
-	const FULLSCREEN = DisplayServer.WINDOW_MODE_FULLSCREEN
+	const FULLSCREEN := DisplayServer.WINDOW_MODE_FULLSCREEN
 	return DisplayServer.window_get_mode() == FULLSCREEN
 	
+## Content size is basically the size of the pixel game window
 func get_content_size() -> Vector2i:
 	return get_tree().get_root().content_scale_size
 	
 #endregion
+
+func get_left_camera_boundary() -> float:
+	return (get_viewport().get_camera_2d().get_screen_center_position().x
+		- get_content_size().x / 2)
+
+func get_right_camera_boundary() -> float:
+	return (get_viewport().get_camera_2d().get_screen_center_position().x
+		+ get_content_size().x / 2)
+
+func get_top_camera_boundary() -> float:
+	return (get_viewport().get_camera_2d().get_screen_center_position().y
+		- get_content_size().y / 2)
+
+func get_bottom_camera_boundary() -> float:
+	return (get_viewport().get_camera_2d().get_screen_center_position().y
+		+ get_content_size().y / 2)
 	
+## Get the next level the player should play (if any) and remove it from the queue
 func get_next_level() -> PackedScene:
 	if playing_levels.size() == 0:
 		return null
@@ -98,9 +134,15 @@ func add_score(value: int, delta: int = 20) -> void:
 	
 #region Scene changing
 
+## Changes the current scene to the specified Node reference
 func change_scene_node(node: Node, free := true) -> void:
-	var curscene_parent := main.get_node("CurrentScene")
+	var curscene_parent: Node = main.get_scene_container()
 	var curscene := curscene_parent.get_child(0)
+	
+	if curscene == node:
+		return
+		
+	_initial_scene = false
 	
 	curscene_parent.remove_child(curscene)
 	if free:
@@ -109,14 +151,26 @@ func change_scene_node(node: Node, free := true) -> void:
 	
 	scene_changed.emit(curscene, node)
 	
+## Changes the current scene to the specified scene
 func change_scene(scene: PackedScene, free := true) -> void:
+	last_scene = scene
 	change_scene_node(scene.instantiate(), free)
 	
+func replay_last_scene() -> void:
+	change_scene(last_scene)
+	
+## Get the scene that the player entered upon starting the game
 func get_initial_scene() -> PackedScene:
 	return main.initial_scene
 	
+func is_initial_scene() -> bool:
+	return _initial_scene
+	
+## The currently playing scene
 func get_current_scene() -> Node:
-	return main.get_node("CurrentScene").get_child(0)
+	if main == null:
+		push_error("You started the game incorrectly. You should use the 'Run Project' button, not the 'Run Current Scene'. Expect errors when the game runs.")
+	return main.get_scene_container().get_child(0)
 	
 #endregion
 	
@@ -131,49 +185,61 @@ func is_fading() -> bool:
 	return _fade_player.is_playing()
 	
 func is_fade_shown() -> bool:
-	return is_fading() or _fader.modulate.a > 0
+	return _fader.get_shader_parameter("Progress") > 0
 
-func _perform_fade(callable: Callable, pause_game: bool, color: FadeColor) -> void:
+func _perform_fade(use_fade_in: bool, pause_game: bool, color: FadeColor, custom_speed := 1.0) -> void:
 	if pause_game:
 		get_tree().paused = true
-		
-	_fader.color = [Color.BLACK, Color.WHITE][color]
-	callable.call()
+	
+	_fade_rect.show()
+	_fader.set_shader_parameter("WhiteFade", color == FadeColor.WHITE)
+	if use_fade_in:
+		_fade_player.play("FadeIn", -1, custom_speed)
+	else:
+		_fade_player.play("FadeIn", -1, -custom_speed, true)
 	await _fade_player.animation_finished
+	if use_fade_in:
+		_fade_rect.hide()
 	fade_end.emit()
 	
 	if pause_game:
 		get_tree().paused = false
 
-func fade_out(color := FadeColor.BLACK) -> void:
-	await _perform_fade(func() -> void: _fade_player.play_backwards("FadeIn"), false, color)
+## Show the fade out effect on the screen
+func fade_out(color := FadeColor.BLACK, custom_speed := 1.0) -> void:
+	await _perform_fade(false, false, color, custom_speed)
 	
-func fade_in(color := FadeColor.BLACK) -> void:
-	await _perform_fade(func() -> void: _fade_player.play("FadeIn"), false, color)
+## Show the fade in effect on the screen
+func fade_in(color := FadeColor.BLACK, custom_speed := 1.0) -> void:
+	await _perform_fade(true, false, color, custom_speed)
 	
-func fade_out_paused(color := FadeColor.BLACK) -> void:
-	await _perform_fade(func() -> void: _fade_player.play_backwards("FadeIn"), true, color)
+## Show the fade out effect on the screen while also pausing the game while it's playing
+func fade_out_paused(color := FadeColor.BLACK, custom_speed := 1.0) -> void:
+	await _perform_fade(false, true, color, custom_speed)
 	
-func fade_in_paused(color := FadeColor.BLACK) -> void:
-	await _perform_fade(func() -> void: _fade_player.play("FadeIn"), true, color)
+## Show the fade in effect on the screen while also pausing the game while it's playing
+func fade_in_paused(color := FadeColor.BLACK, custom_speed := 1.0) -> void:
+	await _perform_fade(true, true, color, custom_speed)
 	
+## Make the game screen visible instantly from fade effect
 func hide_fade() -> void:
-	_fader.modulate.a = 0
+	_fader.set_shader_parameter("Progress", 0.0)
 	
+## Make the game screen black instantly via fade effect
 func show_fade() -> void:
-	_fader.modulate.a = 1
+	_fader.set_shader_parameter("Progress", 1.0)
 	
 #endregion
 
 #region Music
 
-func play_music(stream: AudioStream) -> void:
+func play_music(stream: AudioStream, from_position: float = 0.0) -> void:
 	if music.playing:
 		music.stop()
 	
 	music.stream = stream
 	music.volume_db = 0
-	music.play()
+	music.play(from_position)
 	
 func stop_music() -> void:
 	music.stop()
@@ -195,3 +261,17 @@ func play_global_sfx(sfx_name: String) -> AudioStreamPlayer:
 	return sfx
 
 #endregion
+
+
+func create_explosion(explosion_global_position: Vector2, sfx := true) -> void:
+	var explosion: Node2D = EXPLOSION.instantiate()
+	get_current_scene().add_child(explosion)
+	explosion.global_position = explosion_global_position
+	if sfx:
+		play_global_sfx("Explosion")
+
+func create_capsule(capsule_global_position: Vector2, type: String) -> Capsule:
+	var capsule: Capsule = CAPSULE.instantiate()
+	get_current_scene().add_child(capsule)
+	capsule.initialize(capsule_global_position, type)
+	return capsule

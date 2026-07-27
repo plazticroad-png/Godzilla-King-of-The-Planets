@@ -1,0 +1,49 @@
+[gd_resource type="VisualShader" format=3 uid="uid://b1gvyj5igkgmm"]
+
+[sub_resource type="VisualShaderNodeVectorOp" id="VisualShaderNodeVectorOp_u6umh"]
+operator = 1
+
+[sub_resource type="VisualShaderNodeBooleanParameter" id="VisualShaderNodeBooleanParameter_uuvu4"]
+parameter_name = "WhiteFade"
+
+[sub_resource type="VisualShaderNodeIf" id="VisualShaderNodeIf_2pp1j"]
+default_input_values = [0, 0.0, 1, 1.0, 2, 1e-05, 3, Vector3(0, 0, 0), 4, Vector3(0, 0, 0), 5, Vector3(0, 0, 0)]
+
+[sub_resource type="VisualShaderNodeVectorOp" id="VisualShaderNodeVectorOp_uuvu4"]
+
+[sub_resource type="VisualShaderNodeTexture2DParameter" id="VisualShaderNodeTexture2DParameter_eh071"]
+parameter_name = "Texture2DParameter"
+texture_source = 1
+
+[sub_resource type="VisualShaderNodeTexture" id="VisualShaderNodeTexture_1l35v"]
+source = 5
+
+[sub_resource type="VisualShaderNodeInput" id="VisualShaderNodeInput_ycjao"]
+input_name = "screen_uv"
+
+[sub_resource type="VisualShaderNodeFloatParameter" id="VisualShaderNodeFloatParameter_uuvu4"]
+parameter_name = "Progress"
+hint = 1
+default_value_enabled = true
+
+[resource]
+mode = 1
+flags/light_only = false
+nodes/fragment/0/position = Vector2(1520, -40)
+nodes/fragment/7/node = SubResource("VisualShaderNodeFloatParameter_uuvu4")
+nodes/fragment/7/position = Vector2(480, 60)
+nodes/fragment/14/node = SubResource("VisualShaderNodeVectorOp_u6umh")
+nodes/fragment/14/position = Vector2(940, 280)
+nodes/fragment/15/node = SubResource("VisualShaderNodeBooleanParameter_uuvu4")
+nodes/fragment/15/position = Vector2(500, -140)
+nodes/fragment/16/node = SubResource("VisualShaderNodeIf_2pp1j")
+nodes/fragment/16/position = Vector2(1260, -60)
+nodes/fragment/17/node = SubResource("VisualShaderNodeVectorOp_uuvu4")
+nodes/fragment/17/position = Vector2(920, 40)
+nodes/fragment/18/node = SubResource("VisualShaderNodeTexture2DParameter_eh071")
+nodes/fragment/18/position = Vector2(80, 500)
+nodes/fragment/19/node = SubResource("VisualShaderNodeTexture_1l35v")
+nodes/fragment/19/position = Vector2(640, 480)
+nodes/fragment/20/node = SubResource("VisualShaderNodeInput_ycjao")
+nodes/fragment/20/position = Vector2(160, 380)
+nodes/fragment/connections = PackedInt32Array(7, 0, 14, 1, 15, 0, 16, 0, 7, 0, 17, 1, 17, 0, 16, 3, 14, 0, 16, 5, 16, 0, 0, 0, 18, 0, 19, 2, 20, 0, 19, 0, 19, 0, 14, 0, 19, 0, 17, 0)
