@@ -1,36 +1,10 @@
-# Godotzilla
-Godotzilla is a Godzilla: Monster of Monsters-styled framework made for Godot 4.4.
+Godzila: King of The Planets is a NES Godzilla fangame using the godot engine and Godotzilla being created in the Original Credits section
+this is a work in progress so dont download the .zip file just yet
 
-This framework can be used for anything you want, this includes but not limited to:
-- GMoM remakes
-- NES Godzilla Creepypasta remakes
-- playable NGC fan stories.
+--status: begining of development--
 
-## Features
-- 2 playable characters: Godzilla and Mothra
-- Everything essential for a GMoM-styled game is present:
-  - Levels
-  - Bosses (includes a Mothra boss template)
-  - Boards
-  - Title screen
-  - Main menu
-  - "Pass word game"
-  - Settings
-  - Credits
-- Save system with encryption
-- Wide screen support (togglable)
-- Gamepad support
-  - Tested with cheap controllers as well as Dualshock 4 and Xbox One controllers
-- In-game control remapping
-- Pause menu with settings
-- Reusable components for characters and enemies:
-  - State machine
-  - Health component, power component, attack component
-- [Tutorials!](Tutorials)
-- And more!
-
-## Credits
-- Nintorch - main developer of the framework
+##Orignal Credits
+- Nintorch - main developer of the framework of Godotzilla
 - FreKay Planet - sprite rips of Mothra
 - Cioss - NES controller sprite for "Controls" menu
 - Special thanks to MadzillaKOTH and Dino for following the development
