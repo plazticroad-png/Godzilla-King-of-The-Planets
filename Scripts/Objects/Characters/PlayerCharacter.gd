@@ -6,6 +6,7 @@ enum Type {
 	GODZILLA,
 	MOTHRA,
 	KING_GHIDORAH,
+	MOGUERA,
 }
 
 # States in "States" node of the player should be
