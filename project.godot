@@ -26,6 +26,7 @@ config/icon="res://icon.svg"
 Global="*res://Scripts/Global.gd"
 PauseManager="*res://Scripts/PauseManager.gd"
 SaveManager="*res://Scripts/SaveManager.gd"
+SceneManager="*uid://c0s3qybk7ul38"
 
 [debug]
 
