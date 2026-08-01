@@ -26,6 +26,9 @@ const HIGHLIGHTS: Array[Rect2] = [
 @onready var key_already_mapped: Label = $KeyAlreadyMapped
 @onready var controller_connected: Label = $ControllerConnected
 
+@export var motion_threshold := 0.5
+
+var is_in_motion: JoyAxis = JOY_AXIS_INVALID
 var current_input := 0
 var mapping: Array[InputEvent] = []
 
@@ -41,6 +44,12 @@ func menu_enter() -> void:
 	mapping.fill(null)
 
 func _input(event: InputEvent) -> void:
+	if is_in_motion != JOY_AXIS_INVALID:
+		if event is InputEventJoypadMotion and event.axis == is_in_motion and absf(event.axis_value) <= motion_threshold:
+			is_in_motion = JOY_AXIS_INVALID
+		else:
+			return
+	
 	if key_already_mapped.visible:
 		return
 		
@@ -50,11 +59,13 @@ func _input(event: InputEvent) -> void:
 			return
 		process_input(event)
 	elif controller_connected.visible and (
-		(event is InputEventJoypadMotion and absf(event.axis_value) >= 0.5)
+		(event is InputEventJoypadMotion and absf(event.axis_value) >= motion_threshold)
 		or (event is InputEventJoypadButton and event.pressed)
 		):
+			if event is InputEventJoypadMotion:
+				is_in_motion = event.axis
 			process_input(event)
-			
+
 func update_text() -> void:
 	current_button.text = "press button " + ACTIONS[current_input]
 	
@@ -77,6 +88,10 @@ func update_current_action(event: InputEvent) -> void:
 	mapping[current_input] = event
 	
 func process_input(event: InputEvent) -> void:
+	# Normalize joypad motion value, for already-mapped input detection
+	if event is InputEventJoypadMotion:
+		event.axis_value = 1.0 - 2*((event.axis_value < 0) as int)
+		
 	# Checking if the event was already mapped to a different action
 	var mapping_str: Array[String] = []
 	mapping_str.assign(mapping.map(func(m: InputEvent) -> String:
